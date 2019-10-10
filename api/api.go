@@ -48,16 +48,14 @@ func (a *API) Init(r *mux.Router) {
 	playheadRouter := r.PathPrefix("/v1/playheads").Subrouter()
 	playheadRouter.Handle("/", a.handler(a.GetUserPlayheads)).Methods("GET")
 	playheadRouter.Handle("/", a.handler(a.CreateUserPlayhead)).Methods("POST")
-	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.CreateUserPlayhead)).Methods("PATCH")
+	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
 	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.DeleteUserPlayhead)).Methods("DELETE")
 }
 
 func (a *API) handler(f func(*app.Context, http.ResponseWriter, *http.Request) error) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, 100*1024*1024)
-
 		beginTime := time.Now()
-
 		hijacker, _ := w.(http.Hijacker)
 		w = &statusCodeRecorder{
 			ResponseWriter: w,
@@ -65,8 +63,7 @@ func (a *API) handler(f func(*app.Context, http.ResponseWriter, *http.Request) e
 		}
 
 		ctx := a.App.NewContext().WithRemoteAddress(a.IPAddressForRequest(r))
-		ctx = ctx.WithUser(a.ExtractBearerToken(r))
-		fmt.Println("CTX: ", ctx)
+		ctx = ctx.WithUser(a.App.ExtractToken(extractBearerToken(r)))
 		ctx = ctx.WithLogger(ctx.Logger.WithField("request_id", base64.RawURLEncoding.EncodeToString(model.NewId())))
 
 		defer func() {
@@ -140,8 +137,11 @@ func (a *API) IPAddressForRequest(r *http.Request) string {
 	return strings.Split(strings.TrimSpace(addr), ":")[0]
 }
 
-func (a *API) ExtractBearerToken(r *http.Request) string {
+func extractBearerToken(r *http.Request) string {
 	reqToken := r.Header.Get("Authorization")
+	if len(reqToken) < 1 {
+		return ""
+	}
 	splitToken := strings.Split(reqToken, "Bearer ")
 	return strings.TrimSpace(splitToken[1])
 }

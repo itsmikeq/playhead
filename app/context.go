@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
@@ -48,22 +49,35 @@ type CustomClaims struct {
 	extra map[string]interface{}
 }
 
-func (a *App) ExtractToken(tokenString string) (*model.User, error) {
+func (a *App) ExtractToken(tokenString string) *model.User {
 	claims := jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(string(a.Config.JwtKey)), nil
 	})
-	fmt.Println("TOKEN: ", token)
-	fmt.Println("ERR: ", err)
-	for key, val := range claims {
-		fmt.Printf("Key: %v, value: %v\n", key, val)
+	jsonbody, err := json.Marshal(claims)
+	if err != nil {
+		// do error check
+		fmt.Println(err)
+		return nil
 	}
 	user := model.User{}
-	return &user, nil
+	// for key, val := range claims {
+	// 	fmt.Printf("Key: %v, value: %v\n", key, val)
+	// }
+	if err := json.Unmarshal(jsonbody, &user); err != nil {
+		logrus.Println(err)
+	}
+
+	// fmt.Printf("GOT USER: %+v\n", user)
+	// fmt.Printf("GOT CLAIMS USER: %+v\n", claims["user_id"])
+	user.UserID = fmt.Sprintf("%v", claims["user_id"])
+
+	return &user
 }
-func (ctx *Context) WithUser(authString string) *Context {
+func (ctx *Context) WithUser(user *model.User) *Context {
+	// fmt.Println("Got User ", user)
 	ret := *ctx
-	ret.User = &model.User{}
+	ret.User = user
 	return &ret
 }
 

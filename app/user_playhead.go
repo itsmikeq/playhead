@@ -43,18 +43,14 @@ func (ctx *Context) GetUserPlayheads() ([]*model.UserPlayhead, error) {
 	if ctx.User == nil {
 		return nil, ctx.AuthorizationError()
 	}
-
-	return ctx.getPlayheadsByUserId(ctx.User.UserID)
+	return ctx.Database.GetUserPlayheads(ctx.User.UserID)
 }
 
-func (ctx *Context) getPlayheadsByUserId(userUUID string) ([]*model.UserPlayhead, error) {
-	return ctx.Database.GetUserPlayheads(userUUID)
-}
-
-func (ctx *Context) getPlayheadsByUserIdAndSeriesId(userUUID string, seriesUUID string) (*model.UserPlayhead, error) {
-	var userPlayhead model.UserPlayhead
-	r := ctx.Database.First(&userPlayhead, &model.UserPlayhead{UserUUID: userUUID, SeriesUUID: seriesUUID})
-	return &userPlayhead, r.Error
+func (ctx *Context) GetPlayheadByUserIdAndSeriesId(seriesUUID string) (*model.UserPlayhead, error) {
+	if ctx.User == nil {
+		return nil, ctx.AuthorizationError()
+	}
+	return ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(ctx.User.UserID, seriesUUID)
 }
 
 func (ctx *Context) UpdatePlayhead(playhead *model.UserPlayhead) error {
@@ -78,7 +74,7 @@ func (ctx *Context) DeletePlayheadByUserIdAndSeriesId(userUUID string, seriesUUI
 		return ctx.AuthorizationError()
 	}
 
-	playhead, err := ctx.getPlayheadsByUserIdAndSeriesId(userUUID, seriesUUID)
+	playhead, err := ctx.GetPlayheadByUserIdAndSeriesId(seriesUUID)
 	if err != nil {
 		return err
 	}
@@ -86,6 +82,7 @@ func (ctx *Context) DeletePlayheadByUserIdAndSeriesId(userUUID string, seriesUUI
 	if playhead.UserUUID != ctx.User.UserID {
 		return ctx.AuthorizationError()
 	}
+	ctx.Database.Delete(&playhead)
 
 	return err
 }

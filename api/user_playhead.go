@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 
@@ -17,15 +18,9 @@ type UserInput struct {
 	EpisodeUUID string `json:"episode_uuid"`
 }
 
-type BigUserInput struct {
-	UserUUID    string `json:"user_uuid"`
-	SessionID   string `json:"session_id"`
+type UserResponse struct {
 	SeriesUUID  string `json:"series_uuid"`
 	EpisodeUUID string `json:"episode_uuid"`
-}
-
-type UserResponse struct {
-	Id uint `json:"id"`
 }
 
 //  Here we will snag the userID from the user's secret key
@@ -35,7 +30,7 @@ type UserResponse struct {
 
 func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
-
+	fmt.Printf("Got user %+v\n", ctx.User)
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -46,13 +41,13 @@ func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: input.UserUUID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
+	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.CreateUserPlayhead(playhead); err != nil {
 		return err
 	}
 
-	data, err := json.Marshal(&UserResponse{Id: playhead.ID})
+	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
 	if err != nil {
 		return err
 	}
@@ -80,7 +75,7 @@ func (a *API) UpdateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	data, err := json.Marshal(&UserResponse{Id: playhead.ID})
+	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
 	if err != nil {
 		return err
 	}
@@ -108,7 +103,7 @@ func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	data, err := json.Marshal(&UserResponse{Id: playhead.ID})
+	data, err := json.Marshal(&UserResponse{})
 	if err != nil {
 		return err
 	}
@@ -117,6 +112,7 @@ func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 	return err
 }
 
+// Get a single playhead by user UUID and Series UUID
 func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 
@@ -131,13 +127,12 @@ func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.R
 	}
 
 	playhead := &model.UserPlayhead{UserUUID: input.UserUUID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
-
-	if r, err := ctx.GetUserPlayheads(); err != nil {
-		fmt.Println(r)
-		return err
+	if playhead.SeriesUUID == "" {
+		// not found, carry on
+		return nil
 	}
 
-	data, err := json.Marshal(&UserResponse{Id: playhead.ID})
+	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
 	if err != nil {
 		return err
 	}
@@ -159,18 +154,23 @@ func (a *API) GetUserPlayheads(ctx *app.Context, w http.ResponseWriter, r *http.
 		return err
 	}
 
-	// playheads := []model.UserPlayhead{}
-
-	if r, err := ctx.GetUserPlayheads(); err != nil {
-		fmt.Println(r)
+	if playheads, err := ctx.GetUserPlayheads(); err != nil {
+		logrus.Error(err)
 		return err
+	} else if len(playheads) < 1 {
+		data, err := json.Marshal(&UserResponse{})
+		_, err = w.Write(data)
+		return err
+	} else {
+		datas := make([]byte, 0)
+		for playhead := range playheads {
+			data, err := json.Marshal(&UserResponse{SeriesUUID: playheads[playhead].SeriesUUID, EpisodeUUID: playheads[playhead].EpisodeUUID})
+			if err == nil {
+				datas = append(datas[:], data...)
+			}
+		}
+		_, err = w.Write(datas)
 	}
 
-	data, err := json.Marshal(&UserResponse{Id: 1})
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(data)
 	return err
 }

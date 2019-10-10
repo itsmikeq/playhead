@@ -32,9 +32,15 @@ func (db *Database) DeleteUserPlayhead(userPlayhead *model.UserPlayhead) error {
 	return db.Delete(userPlayhead).Error
 }
 
-func (db *Database) GetUserPlayheads(userUUID string) ([]*model.UserPlayhead, error) {
-	var userPlayheads []*model.UserPlayhead
-	r := db.Find(userPlayheads, &model.UserPlayhead{UserUUID: userUUID});
+func (db *Database) GetUserPlayheads(userUUID string) (userPlayheads []*model.UserPlayhead, err error) {
+	// var userPlayheads []*model.UserPlayhead
+	r := db.Where("user_uuid = ?", userUUID).Find(&userPlayheads)
+	// for t := range userPlayheads {
+	// 	fmt.Printf("ITEM: %+v\n", userPlayheads[t])
+	// 	fmt.Printf("ITEM's Series UUID: %+v\n", userPlayheads[t].SeriesUUID)
+	// 	fmt.Printf("ITEM's User UUID: %+v\n", userPlayheads[t].UserUUID)
+	// }
+
 	if r.Error != nil {
 		if gorm.IsRecordNotFoundError(r.Error) {
 			return nil, nil
