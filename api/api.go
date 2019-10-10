@@ -48,7 +48,7 @@ func (a *API) Init(r *mux.Router) {
 	playheadRouter := r.PathPrefix("/v1/playheads").Subrouter()
 	playheadRouter.Handle("/", a.handler(a.GetUserPlayheads)).Methods("GET")
 	playheadRouter.Handle("/", a.handler(a.CreateUserPlayhead)).Methods("POST")
-	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
+	playheadRouter.Handle("/", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
 	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.DeleteUserPlayhead)).Methods("DELETE")
 }
 

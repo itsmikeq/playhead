@@ -69,7 +69,7 @@ func (a *API) UpdateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: input.UserUUID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
+	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.UpdatePlayhead(playhead); err != nil {
 		return err
@@ -97,7 +97,7 @@ func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: input.UserUUID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
+	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.DeletePlayheadByUserIdAndSeriesId(playhead.UserUUID, playhead.SeriesUUID); err != nil {
 		return err
@@ -126,7 +126,7 @@ func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: input.UserUUID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
+	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 	if playhead.SeriesUUID == "" {
 		// not found, carry on
 		return nil

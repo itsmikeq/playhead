@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"playhead/model"
 )
 
@@ -10,10 +11,12 @@ func (a *App) GetUserPlayhead(userUUID string, seriesUUID string) (*model.UserPl
 
 func (a *App) UpdatePlayhead(userUUID string, seriesUUID string, episodeUUID string) (*model.UserPlayhead, error) {
 	ph, err := a.Database.GetPlayheadByUserUUIDAndSeriesUUID(userUUID, seriesUUID)
+	fmt.Printf("PH: %+v\n", ph)
 	if err != nil {
 		return nil, err
 	}
 	ph.EpisodeUUID = episodeUUID
+	fmt.Printf("PH: %+v\n", ph)
 	if err := a.Database.UpdateUserPlayhead(ph); err != nil {
 		return nil, err
 	}
@@ -46,7 +49,7 @@ func (ctx *Context) GetUserPlayheads() ([]*model.UserPlayhead, error) {
 	return ctx.Database.GetUserPlayheads(ctx.User.UserID)
 }
 
-func (ctx *Context) GetPlayheadByUserIdAndSeriesId(seriesUUID string) (*model.UserPlayhead, error) {
+func (ctx *Context) GetPlayheadBySeriesId(seriesUUID string) (*model.UserPlayhead, error) {
 	if ctx.User == nil {
 		return nil, ctx.AuthorizationError()
 	}
@@ -65,8 +68,12 @@ func (ctx *Context) UpdatePlayhead(playhead *model.UserPlayhead) error {
 	if err := ctx.validatePlayhead(playhead); err != nil {
 		return nil
 	}
-
-	return ctx.Database.Update(playhead).Error
+	newEpisode := playhead.EpisodeUUID
+	if playhead, err := ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(playhead.UserUUID, playhead.SeriesUUID); err == nil {
+		playhead.EpisodeUUID = newEpisode
+		return ctx.Database.Save(playhead).Error
+	}
+	return nil
 }
 
 func (ctx *Context) DeletePlayheadByUserIdAndSeriesId(userUUID string, seriesUUID string) error {
@@ -74,7 +81,7 @@ func (ctx *Context) DeletePlayheadByUserIdAndSeriesId(userUUID string, seriesUUI
 		return ctx.AuthorizationError()
 	}
 
-	playhead, err := ctx.GetPlayheadByUserIdAndSeriesId(seriesUUID)
+	playhead, err := ctx.GetPlayheadBySeriesId(seriesUUID)
 	if err != nil {
 		return err
 	}
