@@ -46,6 +46,7 @@ func (a *API) Init(r *mux.Router) {
 
 	// playhead methods
 	playheadRouter := r.PathPrefix("/v1").Subrouter()
+	playheadRouter.Handle("/playhead", a.handler(a.GetUserPlayhead)).Methods("GET")
 	playheadRouter.Handle("/playheads", a.handler(a.GetUserPlayheads)).Methods("GET")
 	playheadRouter.Handle("/playheads", a.handler(a.CreateUserPlayhead)).Methods("POST")
 	playheadRouter.Handle("/playheads", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")

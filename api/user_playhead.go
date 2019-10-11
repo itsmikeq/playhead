@@ -138,13 +138,15 @@ func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
-	if playhead.SeriesUUID == "" {
+	if input.SeriesUUID == "" {
 		// not found, carry on
 		return nil
 	}
-
-	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
+	var playhead *model.UserPlayhead
+	if playhead, err = ctx.GetPlayhead(input.SeriesUUID); err != nil {
+		return err
+	}
+	data, err := json.Marshal(&UserResponse{EpisodeUUID: playhead.EpisodeUUID})
 	if err != nil {
 		return err
 	}

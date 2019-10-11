@@ -5,32 +5,12 @@ import (
 	"playhead/model"
 )
 
-func (a *App) GetUserPlayhead(userUUID string, seriesUUID string) (*model.UserPlayhead, error) {
-	return a.Database.GetPlayheadByUserUUIDAndSeriesUUID(userUUID, seriesUUID)
-}
-
-func (ctx *Context) CreateUserPlayhead(playhead *model.UserPlayhead) error {
-
+// Get a single playhead
+func (ctx *Context) GetPlayhead(seriesUUID string) (*model.UserPlayhead, error) {
 	if ctx.User == nil {
-		return ctx.AuthorizationError()
+		return nil, ctx.AuthorizationError()
 	}
-
-	if err := ctx.validatePlayhead(playhead); err != nil {
-		return err
-	}
-
-	return ctx.Database.CreateUserPlayhead(playhead)
-}
-
-func (ctx *Context) validatePlayhead(user *model.UserPlayhead) *ValidationError {
-	// naive email validation
-	if (len(user.EpisodeUUID) < 1) {
-		return &ValidationError{"Missing episode UUID"}
-	}
-	if (len(user.SeriesUUID) < 1) {
-		return &ValidationError{"Missing series UUID"}
-	}
-	return nil
+	return ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(ctx.User.UserID, seriesUUID)
 }
 
 func (ctx *Context) GetUserPlayheads() ([]*model.UserPlayhead, error) {
@@ -45,6 +25,19 @@ func (ctx *Context) GetPlayheadBySeriesId(seriesUUID string) (*model.UserPlayhea
 		return nil, ctx.AuthorizationError()
 	}
 	return ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(ctx.User.UserID, seriesUUID)
+}
+
+func (ctx *Context) CreateUserPlayhead(playhead *model.UserPlayhead) error {
+
+	if ctx.User == nil {
+		return ctx.AuthorizationError()
+	}
+
+	if err := ctx.validatePlayhead(playhead); err != nil {
+		return err
+	}
+
+	return ctx.Database.CreateUserPlayhead(playhead)
 }
 
 func (ctx *Context) UpdatePlayhead(playhead *model.UserPlayhead) error {
@@ -85,4 +78,15 @@ func (ctx *Context) DeletePlayheadBySeriesUUID(userUUID string, seriesUUID strin
 	ctx.Database.Delete(&playhead)
 
 	return err
+}
+
+func (ctx *Context) validatePlayhead(user *model.UserPlayhead) *ValidationError {
+	// naive email validation
+	if (len(user.EpisodeUUID) < 1) {
+		return &ValidationError{"Missing episode UUID"}
+	}
+	if (len(user.SeriesUUID) < 1) {
+		return &ValidationError{"Missing series UUID"}
+	}
+	return nil
 }
