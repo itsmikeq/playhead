@@ -76,7 +76,7 @@ func (ctx *Context) UpdatePlayhead(playhead *model.UserPlayhead) error {
 	return nil
 }
 
-func (ctx *Context) DeletePlayheadByUserIdAndSeriesId(userUUID string, seriesUUID string) error {
+func (ctx *Context) DeletePlayheadBySeriesUUID(userUUID string, seriesUUID string) error {
 	if ctx.User == nil {
 		return ctx.AuthorizationError()
 	}

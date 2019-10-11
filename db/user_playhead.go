@@ -12,7 +12,7 @@ func (db *Database) GetPlayheadByUserUUIDAndSeriesUUID(userUUID string, seriesUU
 
 	if err := db.First(&userPlayhead, model.UserPlayhead{SeriesUUID: seriesUUID, UserUUID: userUUID}).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			return nil, nil
+			return nil, errors.Wrap(err, "Not Found")
 		}
 		return nil, errors.Wrap(err, "unable to get userPlayhead")
 	}

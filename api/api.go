@@ -45,11 +45,11 @@ func (a *API) Init(r *mux.Router) {
 	// r.Handle("/api/v1/playheads/", a.handler(a.CreateUserPlayhead)).Methods("POST")
 
 	// playhead methods
-	playheadRouter := r.PathPrefix("/v1/playheads").Subrouter()
-	playheadRouter.Handle("/", a.handler(a.GetUserPlayheads)).Methods("GET")
-	playheadRouter.Handle("/", a.handler(a.CreateUserPlayhead)).Methods("POST")
-	playheadRouter.Handle("/", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
-	playheadRouter.Handle("/{id:[0-9]+}/", a.handler(a.DeleteUserPlayhead)).Methods("DELETE")
+	playheadRouter := r.PathPrefix("/v1").Subrouter()
+	playheadRouter.Handle("/playheads", a.handler(a.GetUserPlayheads)).Methods("GET")
+	playheadRouter.Handle("/playheads", a.handler(a.CreateUserPlayhead)).Methods("POST")
+	playheadRouter.Handle("/playheads", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
+	playheadRouter.Handle("/playheads", a.handler(a.DeleteUserPlayhead)).Methods("DELETE")
 }
 
 func (a *API) handler(f func(*app.Context, http.ResponseWriter, *http.Request) error) http.Handler {
