@@ -9,20 +9,6 @@ func (a *App) GetUserPlayhead(userUUID string, seriesUUID string) (*model.UserPl
 	return a.Database.GetPlayheadByUserUUIDAndSeriesUUID(userUUID, seriesUUID)
 }
 
-// func (a *App) UpdatePlayhead(userUUID string, seriesUUID string, episodeUUID string) (*model.UserPlayhead, error) {
-// 	ph, err := a.Database.GetPlayheadByUserUUIDAndSeriesUUID(userUUID, seriesUUID)
-// 	fmt.Printf("PH: %+v\n", ph)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	ph.EpisodeUUID = episodeUUID
-// 	fmt.Printf("PH: %+v\n", ph)
-// 	if err := a.Database.UpdateUserPlayhead(ph); err != nil {
-// 		return nil, err
-// 	}
-// 	return ph, nil
-// }
-
 func (ctx *Context) CreateUserPlayhead(playhead *model.UserPlayhead) error {
 
 	if ctx.User == nil {
