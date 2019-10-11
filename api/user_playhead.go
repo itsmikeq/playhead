@@ -23,11 +23,6 @@ type UserResponse struct {
 	EpisodeUUID string `json:"episode_uuid"`
 }
 
-type ErrorResponse struct {
-	Status  uint   `json:"status"`
-	Message string `json:"error_message"`
-}
-
 //  Here we will snag the userID from the user's secret key
 // and build the input from either the sessionID, or the user's uuid
 // Once we get a session ID with a userID, we'll update all of the matching session IDs with the
@@ -35,7 +30,7 @@ type ErrorResponse struct {
 
 func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
-	fmt.Printf("Got user %+v\n", ctx.User)
+	// fmt.Printf("Got user %+v\n", ctx.User)
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -74,10 +69,16 @@ func (a *API) UpdateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 
-	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
+	playhead := &model.UserPlayhead{SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.UpdatePlayhead(playhead); err != nil {
-		return err
+		if data, errm := json.Marshal(&app.ValidationError{Message: fmt.Sprintf("%s", err)}); errm != nil {
+			logrus.Error(errm)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(data)
+		}
+		return nil
 	}
 
 	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
@@ -105,7 +106,7 @@ func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.DeletePlayheadBySeriesUUID(playhead.UserUUID, playhead.SeriesUUID); err != nil {
-		if data, errm := json.Marshal(&ErrorResponse{Status: http.StatusBadRequest, Message: fmt.Sprintf("%s", err)}); errm != nil {
+		if data, errm := json.Marshal(&app.ValidationError{Message: fmt.Sprintf("%s", err)}); errm != nil {
 			logrus.Error(errm)
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
