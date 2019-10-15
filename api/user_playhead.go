@@ -151,7 +151,11 @@ func (a *API) GetPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Reque
 	}
 	var playhead *model.UserPlayhead
 	if playhead, err = ctx.GetPlayhead(input.SeriesUUID); err != nil {
-		return err
+		if data, errm := json.Marshal(&app.ValidationError{Message: fmt.Sprintf("%s", err)}); errm == nil {
+			w.WriteHeader(http.StatusAlreadyReported)
+			_, _ = w.Write(data)
+			return nil
+		}
 	}
 	data, err := json.Marshal(&UserResponse{EpisodeUUID: playhead.EpisodeUUID})
 	if err != nil {
