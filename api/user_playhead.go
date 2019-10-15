@@ -44,7 +44,14 @@ func (a *API) CreatePlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Re
 	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
 	if err := ctx.CreatePlayhead(playhead); err != nil {
-		return err
+		if data, errm := json.Marshal(&app.ValidationError{Message: fmt.Sprintf("%s", err)}); errm == nil {
+			w.WriteHeader(http.StatusAlreadyReported)
+			_, _ = w.Write(data)
+			return nil
+		} else {
+			logrus.Error(errm)
+			return err
+		}
 	}
 
 	data, err := json.Marshal(&UserResponse{SeriesUUID: playhead.SeriesUUID, EpisodeUUID: playhead.EpisodeUUID})
