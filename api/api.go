@@ -42,15 +42,15 @@ func New(a *app.App) (api *API, err error) {
 
 func (a *API) Init(r *mux.Router) {
 	// user methods
-	// r.Handle("/api/v1/playheads/", a.handler(a.CreateUserPlayhead)).Methods("POST")
+	// r.Handle("/api/v1/playheads/", a.handler(a.CreatePlayhead)).Methods("POST")
 
 	// playhead methods
 	playheadRouter := r.PathPrefix("/v1").Subrouter()
-	playheadRouter.Handle("/playhead", a.handler(a.GetUserPlayhead)).Methods("GET")
-	playheadRouter.Handle("/playheads", a.handler(a.GetUserPlayheads)).Methods("GET")
-	playheadRouter.Handle("/playheads", a.handler(a.CreateUserPlayhead)).Methods("POST")
-	playheadRouter.Handle("/playheads", a.handler(a.UpdateUserPlayhead)).Methods("PATCH")
-	playheadRouter.Handle("/playheads", a.handler(a.DeleteUserPlayhead)).Methods("DELETE")
+	playheadRouter.Handle("/playhead", a.handler(a.GetPlayhead)).Methods("GET")
+	playheadRouter.Handle("/playheads", a.handler(a.GetPlayheads)).Methods("GET")
+	playheadRouter.Handle("/playheads", a.handler(a.CreatePlayhead)).Methods("POST")
+	playheadRouter.Handle("/playheads", a.handler(a.UpdatePlayhead)).Methods("PATCH")
+	playheadRouter.Handle("/playheads", a.handler(a.DeletePlayhead)).Methods("DELETE")
 }
 
 func (a *API) handler(f func(*app.Context, http.ResponseWriter, *http.Request) error) http.Handler {

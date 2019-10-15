@@ -13,7 +13,7 @@ func (ctx *Context) GetPlayhead(seriesUUID string) (*model.UserPlayhead, error) 
 	return ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(ctx.User.UserID, seriesUUID)
 }
 
-func (ctx *Context) GetUserPlayheads() ([]*model.UserPlayhead, error) {
+func (ctx *Context) GetPlayheads() ([]*model.UserPlayhead, error) {
 	if ctx.User == nil {
 		return nil, ctx.AuthorizationError()
 	}
@@ -27,7 +27,7 @@ func (ctx *Context) GetPlayheadBySeriesId(seriesUUID string) (*model.UserPlayhea
 	return ctx.Database.GetPlayheadByUserUUIDAndSeriesUUID(ctx.User.UserID, seriesUUID)
 }
 
-func (ctx *Context) CreateUserPlayhead(playhead *model.UserPlayhead) error {
+func (ctx *Context) CreatePlayhead(playhead *model.UserPlayhead) error {
 
 	if ctx.User == nil {
 		return ctx.AuthorizationError()

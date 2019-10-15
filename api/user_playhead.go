@@ -28,7 +28,7 @@ type UserResponse struct {
 // Once we get a session ID with a userID, we'll update all of the matching session IDs with the
 // corresponding userID
 
-func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
+func (a *API) CreatePlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 	// fmt.Printf("Got user %+v\n", ctx.User)
 	defer r.Body.Close()
@@ -43,7 +43,7 @@ func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 
 	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
-	if err := ctx.CreateUserPlayhead(playhead); err != nil {
+	if err := ctx.CreatePlayhead(playhead); err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func (a *API) CreateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 	return err
 }
 
-func (a *API) UpdateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
+func (a *API) UpdatePlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 
 	defer r.Body.Close()
@@ -90,7 +90,7 @@ func (a *API) UpdateUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 	return err
 }
 
-func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
+func (a *API) DeletePlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 
 	defer r.Body.Close()
@@ -125,7 +125,7 @@ func (a *API) DeleteUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *htt
 }
 
 // Get a single playhead by user UUID and Series UUID
-func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
+func (a *API) GetPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 
 	defer r.Body.Close()
@@ -155,7 +155,7 @@ func (a *API) GetUserPlayhead(ctx *app.Context, w http.ResponseWriter, r *http.R
 	return err
 }
 
-func (a *API) GetUserPlayheads(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
+func (a *API) GetPlayheads(ctx *app.Context, w http.ResponseWriter, r *http.Request) error {
 	var input UserInput
 
 	defer r.Body.Close()
@@ -168,7 +168,7 @@ func (a *API) GetUserPlayheads(ctx *app.Context, w http.ResponseWriter, r *http.
 		return err
 	}
 
-	if playheads, err := ctx.GetUserPlayheads(); err != nil {
+	if playheads, err := ctx.GetPlayheads(); err != nil {
 		logrus.Error(err)
 		return err
 	} else if len(playheads) < 1 {
