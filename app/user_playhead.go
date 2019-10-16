@@ -62,7 +62,7 @@ func (ctx *Context) UpdatePlayhead(playhead *model.UserPlayhead) error {
 	}
 }
 
-func (ctx *Context) DeletePlayheadBySeriesUUID(userUUID string, seriesUUID string) error {
+func (ctx *Context) DeletePlayheadBySeriesUUID(seriesUUID string) error {
 	if ctx.User == nil {
 		return ctx.AuthorizationError()
 	}
@@ -78,6 +78,19 @@ func (ctx *Context) DeletePlayheadBySeriesUUID(userUUID string, seriesUUID strin
 	ctx.Database.Delete(&playhead)
 
 	return err
+}
+
+func (ctx *Context) DeletePlayheadsForUser(userUUID string) error {
+	if ctx.User == nil {
+		return ctx.AuthorizationError()
+	}
+
+	if playheads, err := ctx.Database.GetUserPlayheads(ctx.User.UserID); err == nil {
+		del := ctx.Database.Delete(&playheads)
+		return del.Error
+	} else {
+		return err
+	}
 }
 
 func (ctx *Context) validatePlayhead(user *model.UserPlayhead) *ValidationError {

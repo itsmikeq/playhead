@@ -112,7 +112,7 @@ func (a *API) DeletePlayhead(ctx *app.Context, w http.ResponseWriter, r *http.Re
 
 	playhead := &model.UserPlayhead{UserUUID: ctx.User.UserID, SeriesUUID: input.SeriesUUID, EpisodeUUID: input.EpisodeUUID}
 
-	if err := ctx.DeletePlayheadBySeriesUUID(playhead.UserUUID, playhead.SeriesUUID); err != nil {
+	if err := ctx.DeletePlayheadBySeriesUUID(playhead.SeriesUUID); err != nil {
 		if data, errm := json.Marshal(&app.ValidationError{Message: fmt.Sprintf("%s", err)}); errm != nil {
 			logrus.Error(errm)
 		} else {

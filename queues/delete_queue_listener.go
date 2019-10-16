@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/sirupsen/logrus"
 	"path/filepath"
-	"wtc_go/wtc"
+	"playhead/db"
+	"playhead/model"
 )
 
 var sqsMaxMessages = int64(1)
 var timeWaitSeconds = int64(1)
 
 type QMessageBody struct {
-	UserUUID    string      `json:"user_uuid" binding:"required"`
-	RequestID   string 		`json:"request_id" binding:"required"`
-	RequestType string      `json:"request_type" binding:"required"`
-	ServiceName string      `json:"service_name" binding:"required"`
+	UserUUID    string `json:"user_uuid" binding:"required"`
+	RequestID   string `json:"request_id" binding:"required"`
+	RequestType string `json:"request_type" binding:"required"`
+	ServiceName string `json:"service_name" binding:"required"`
 }
 
 type QMessage struct {
@@ -26,18 +28,25 @@ type QMessage struct {
 	MessageBody QMessageBody
 }
 
-func StartListener() {
+type Context struct {
+	Logger       logrus.FieldLogger
+	Database     *db.Database
+	UserPlayhead *model.UserPlayhead
+	User         *model.User
+}
+
+func (q *Queue) StartListener(ctx *Context) {
 	chnMessages := make(chan *sqs.Message, sqsMaxMessages)
-	go pollSqs(chnMessages)
+	go q.pollSqs(chnMessages)
 
 	fmt.Printf("Listening on stack queue: %s\n", getListenQueueUrl())
 
 	go func() {
 		for message := range chnMessages {
-			if err := handleMessage(message); ErrorHandler(err) {
+			if err := ctx.handleMessage(message); ErrorHandler(err) {
 				fmt.Printf("Error with handling message %v\n", err)
 			} else {
-				deleteMessage(message)
+				q.deleteMessage(message)
 			}
 		}
 	}()
@@ -49,10 +58,10 @@ func StartListener() {
 // {"request_id":"uuid2","request_type":"UserDataDownloadRequest","user_uuid":"0e16e2bb-ac83-4cd6-b320-77abcbbc820e","created_at":"2019-04-23T17:54:36.000Z"}
 // {"request_id":"uuid3","request_type":"UserDataDeleteRequest","user_uuid":"0e16e2bb-ac83-4cd6-b320-77abcbbc820e","created_at":"2019-04-23T17:54:36.000Z"}
 
-func handleMessage(message *sqs.Message) error {
+func (ctx *Context) handleMessage(message *sqs.Message) error {
 	var qMessage QMessage
 	// fmt.Printf("Got Message:\n%v\n", message)
-	qMessage.MessageBody.ServiceName = "wtc"
+	qMessage.MessageBody.ServiceName = "playhead"
 	if err := json.Unmarshal([]byte(aws.StringValue(message.Body)), &qMessage); ErrorHandler(err) {
 		fmt.Printf("Error decoding json: '%v'\n", err)
 	}
@@ -62,12 +71,12 @@ func handleMessage(message *sqs.Message) error {
 		fmt.Println(err)
 	}
 	if qMessage.Subject == "UserDataDownloadRequest" || qMessage.MessageBody.RequestType == "UserDataDownloadRequest" {
-		if downErr := handleDownload(qMessage); ErrorHandler(downErr) {
+		if downErr := ctx.handleDownload(qMessage); ErrorHandler(downErr) {
 			// Error is handled and logged
 			return nil
 		}
 	} else if qMessage.Subject == "UserDataDeleteRequest" || qMessage.MessageBody.RequestType == "UserDataDeleteRequest" {
-		if delerr := handleDelete(qMessage); ErrorHandler(delerr) {
+		if delerr := ctx.handleDelete(qMessage); ErrorHandler(delerr) {
 			// Error is handled and logged
 			return nil
 		}
@@ -82,12 +91,12 @@ func checkForEmpty(qMessage QMessage) error {
 	return nil
 }
 
-func handleDelete(qMessage QMessage) error {
+func (ctx *Context) handleDelete(qMessage QMessage) error {
 	pm := PublishMessage{
 		RequestID:    qMessage.MessageBody.RequestID,
 		RequestType:  qMessage.MessageBody.RequestType,
 		UserUUID:     qMessage.MessageBody.UserUUID,
-		ServiceName:  "wtc",
+		ServiceName:  "playhead",
 		S3Location:   "",
 		ErrorMessage: "",
 		Success:      true,
@@ -102,34 +111,30 @@ func handleDelete(qMessage QMessage) error {
 		return err
 	}
 
-	if err := wtc.DeleteLastPlayed(qMessage.MessageBody.UserUUID); ErrorHandler(err) {
+	if playheads, err := ctx.Database.GetUserPlayheads(pm.UserUUID); err != nil {
+		logrus.Error(err.Error())
 		pm.ErrorMessage = fmt.Sprintf("error deleting last played %v\n", err.Error())
 		pm.Success = false
-		if perr := Publish(pm); ErrorHandler(perr) {
-			return perr
+	} else {
+		del := ctx.Database.Delete(&playheads)
+		if del.Error != nil {
+			logrus.Error(del.Error)
+			return del.Error
 		}
-		return err
-	}
-	if err := wtc.DeletePlayedPositions(qMessage.MessageBody.UserUUID); ErrorHandler(err) {
-		pm.ErrorMessage = fmt.Sprintf("error deleting play positions %v\n", err.Error())
-		pm.Success = false
-		if perr := Publish(pm); ErrorHandler(perr) {
-			return perr
+		if err := Publish(pm); err != nil {
+			logrus.Error(err)
 		}
-		return err
-	}
-	if perr := Publish(pm); ErrorHandler(perr) {
-		return perr
+		return nil
 	}
 	return nil
 }
 
-func handleDownload(qMessage QMessage) error {
+func (ctx *Context) handleDownload(qMessage QMessage) error {
 	pm := PublishMessage{
 		RequestID:    qMessage.MessageBody.RequestID,
 		RequestType:  qMessage.MessageBody.RequestType,
 		UserUUID:     qMessage.MessageBody.UserUUID,
-		ServiceName:  "wtc",
+		ServiceName:  "playhead",
 		ErrorMessage: "",
 		Success:      true,
 	}
@@ -142,30 +147,33 @@ func handleDownload(qMessage QMessage) error {
 		return err
 	}
 
-	if allInfo, err := GetAllItems(qMessage.MessageBody.UserUUID); ErrorHandler(err) {
+	if playheads, err := ctx.Database.GetUserPlayheads(pm.UserUUID); err != nil {
 		return err
 	} else {
-		filePath := filepath.Join(getGdprBasePath(), qMessage.MessageBody.RequestID, "wtc.json")
-		if err := AddFileToS3(filePath, JsonifyAllInfo(allInfo)); ErrorHandler(err) {
-			pm.Success = false
-			pm.ErrorMessage = err.Error()
-			if perr := Publish(pm); ErrorHandler(perr) {
-				return perr
-			}
-			return err
-		} else {
-			pm.S3Location = filePath
-			if err := Publish(pm); ErrorHandler(err) {
+		filePath := filepath.Join(getGdprBasePath(), qMessage.MessageBody.RequestID, "playheads.json")
+		if data, err := json.Marshal(&playheads); err == nil {
+			if err := AddFileToS3(filePath, string(data)); ErrorHandler(err) {
+				pm.Success = false
+				pm.ErrorMessage = err.Error()
+				if perr := Publish(pm); ErrorHandler(perr) {
+					return perr
+				}
 				return err
+			} else {
+				pm.S3Location = filePath
+				if err := Publish(pm); ErrorHandler(err) {
+					return err
+				}
 			}
+
 		}
 	}
 	return nil
 }
 
-func deleteMessage(message *sqs.Message) {
+func (q *Queue) deleteMessage(message *sqs.Message) {
 	if _, err := getSQSSession().DeleteMessage(&sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(getListenQueueUrl()),
+		QueueUrl:      aws.String(string(q.Config.GdprQueueUrl)),
 		ReceiptHandle: message.ReceiptHandle,
 	}); err != nil {
 		ErrorHandler(err)
@@ -173,10 +181,10 @@ func deleteMessage(message *sqs.Message) {
 	}
 }
 
-func pollSqs(chn chan<- *sqs.Message) {
+func (q *Queue) pollSqs(chn chan<- *sqs.Message) {
 	for {
 		output, err := getSQSSession().ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(getListenQueueUrl()),
+			QueueUrl:            aws.String(string(q.Config.GdprQueueUrl)),
 			MaxNumberOfMessages: aws.Int64(sqsMaxMessages),
 			WaitTimeSeconds:     aws.Int64(timeWaitSeconds),
 		})

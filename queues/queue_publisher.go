@@ -10,13 +10,13 @@ import (
 
 // used to publish messages to SNS
 type PublishMessage struct {
-	UserUUID   string `json:"user_uuid" binding:"required"`
-	S3Location string `json:"s3_url" binding:"required"`
-	RequestID  string `json:"request_id" binding:"required"`
+	UserUUID     string `json:"user_uuid" binding:"required"`
+	S3Location   string `json:"s3_url" binding:"required"`
+	RequestID    string `json:"request_id" binding:"required"`
 	RequestType  string `json:"request_type" binding:"required"`
 	ServiceName  string `json:"service_name" binding:"required"`
-	ErrorMessage  string `json:"error_message"`
-	Success  bool `json:"success" binding:"required"` // "true" || "false"
+	ErrorMessage string `json:"error_message"`
+	Success      bool   `json:"success" binding:"required"` // "true" || "false"
 }
 
 func Publish(message PublishMessage) error {
@@ -34,7 +34,7 @@ func Publish(message PublishMessage) error {
 		// }
 		input := &sqs.SendMessageInput{
 			MessageBody: aws.String(string(messageJSON)),
-			QueueUrl: aws.String(getCallbackUrl()),
+			QueueUrl:    aws.String(getCallbackUrl()),
 		}
 		// fmt.Printf("Delivering message %v\n", input)
 		if _, err1 := sess.SendMessage(input); ErrorHandler(err1) { // Call to puclish the message

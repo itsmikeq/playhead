@@ -13,8 +13,8 @@ type Config struct {
 
 func InitConfig() (*Config, error) {
 	config := &Config{
-		Port:       viper.GetInt("Port"),
-		ProxyCount: viper.GetInt("ProxyCount"),
+		Port:       viper.GetInt("port"),
+		ProxyCount: viper.GetInt("proxy_count"),
 	}
 	if config.Port == 0 {
 		config.Port = 9092

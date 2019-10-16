@@ -12,7 +12,7 @@ type Config struct {
 
 func InitConfig() (*Config, error) {
 	config := &Config{
-		DatabaseURI: viper.GetString("DatabaseURI"),
+		DatabaseURI: viper.GetString("database_uri"),
 	}
 	if config.DatabaseURI == "" {
 		return nil, fmt.Errorf("DatabaseURI must be set")

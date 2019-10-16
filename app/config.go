@@ -14,8 +14,8 @@ type Config struct {
 
 func InitConfig() (*Config, error) {
 	config := &Config{
-		SecretKey: []byte(viper.GetString("SecretKey")),
-		JwtKey: []byte(viper.GetString("JwtKey")),
+		SecretKey: []byte(viper.GetString("secret_key")),
+		JwtKey: []byte(viper.GetString("jwt_key")),
 	}
 	if len(config.SecretKey) == 0 {
 		return nil, fmt.Errorf("SecretKey must be set")
