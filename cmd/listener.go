@@ -37,7 +37,7 @@ var listenqCmd = &cobra.Command{
 			ch := make(chan os.Signal, 1)
 			signal.Notify(ch, os.Interrupt)
 			<-ch
-			logrus.Info("signal caught. shutting down...")
+			logrus.Info("signal caught. shutting down... I should really push things back into the queue but I DONT")
 			cancel()
 		}()
 
