@@ -19,11 +19,13 @@ type PublishMessage struct {
 	Success      bool   `json:"success" binding:"required"` // "true" || "false"
 }
 
-func Publish(message PublishMessage) error {
+
+
+func (q *Queue) Publish(message PublishMessage) error {
 	if messageJSON, err := json.Marshal(message); ErrorHandler(err) {
 		log.Printf("Error marshaling message: %v\n", err)
 	} else {
-		sess := getSQSSession()
+		sess := q.getSQSSession()
 		// message = {
 		//  request_id: "<request_id_from_original_message>",
 		//  request_type: "UserDataDeleteRequest",
@@ -34,7 +36,7 @@ func Publish(message PublishMessage) error {
 		// }
 		input := &sqs.SendMessageInput{
 			MessageBody: aws.String(string(messageJSON)),
-			QueueUrl:    aws.String(getCallbackUrl()),
+			QueueUrl:    aws.String(string(q.Config.GdprCallbackQueueUrl)),
 		}
 		// fmt.Printf("Delivering message %v\n", input)
 		if _, err1 := sess.SendMessage(input); ErrorHandler(err1) { // Call to puclish the message

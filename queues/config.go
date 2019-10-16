@@ -6,24 +6,28 @@ import (
 )
 
 type Config struct {
-	AwsKey []byte
-	AwsSecret []byte
-	AwsRegion []byte
-	GdprQueueUrl []byte
+	AwsKey               []byte
+	AwsSecret            []byte
+	AwsRegion            []byte
+	GdprQueueUrl         []byte
 	GdprCallbackQueueUrl []byte
-	GdprBucket []byte
-	GdprBasePath []byte
+	GdprBucket           []byte
+	GdprBasePath         []byte
+	SqsMaxMessages       int
+	TimeWaitSeconds      int
 }
 
 func InitConfig() (*Config, error) {
 	config := &Config{
-		AwsKey: []byte(viper.GetString("aws_key")),
-		AwsSecret: []byte(viper.GetString("aws_secret")),
-		AwsRegion: []byte(viper.GetString("aws_region")),
-		GdprQueueUrl: []byte(viper.GetString("gdpr_queue_url")),
+		AwsKey:               []byte(viper.GetString("aws_key")),
+		AwsSecret:            []byte(viper.GetString("aws_secret")),
+		AwsRegion:            []byte(viper.GetString("aws_region")),
+		GdprQueueUrl:         []byte(viper.GetString("gdpr_queue_url")),
 		GdprCallbackQueueUrl: []byte(viper.GetString("gdpr_callback_queue_url")),
-		GdprBucket: []byte(viper.GetString("gdpr_bucket")),
-		GdprBasePath: []byte(viper.GetString("gdpr_base_path")),
+		GdprBucket:           []byte(viper.GetString("gdpr_bucket")),
+		GdprBasePath:         []byte(viper.GetString("gdpr_base_path")),
+		SqsMaxMessages:       viper.GetInt("sqs_max_messages"),
+		TimeWaitSeconds:      viper.GetInt("sqs_max_messages"),
 	}
 
 	if len(config.AwsKey) == 0 {
@@ -50,6 +54,11 @@ func InitConfig() (*Config, error) {
 	if len(config.GdprBasePath) == 0 {
 		return nil, fmt.Errorf("gdpr_base_path must be set")
 	}
+	if config.SqsMaxMessages == 0 {
+		config.SqsMaxMessages = 1
+	}
+	if config.TimeWaitSeconds == 0 {
+		config.TimeWaitSeconds = 1
+	}
 	return config, nil
 }
-
