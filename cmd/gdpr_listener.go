@@ -22,8 +22,8 @@ func listenQueues(ctx context.Context, q *queues.Queue) {
 }
 
 var listenqCmd = &cobra.Command{
-	Use:   "listener",
-	Short: "Start the queue listener",
+	Use:   "gdpr_listener",
+	Short: "Start the GDPR queue listener",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		q, err := queues.New()
 		if err != nil {
