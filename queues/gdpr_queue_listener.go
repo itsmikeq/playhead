@@ -4,30 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
 )
 
-func (q *Queue) StartListener(ctx *Context) {
+func (q *Queue) StartGdprListener(ctx *Context) {
 	chnMessages := make(chan *sqs.Message, int64(q.Config.SqsMaxMessages))
-	go q.pollSqs(chnMessages)
+	go q.pollGdprSqs(chnMessages)
 
 	fmt.Printf("Listening on stack queue: %s\n", string(q.Config.GdprQueueUrl))
 
 	go func() {
 		for message := range chnMessages {
-			if err := q.handleMessage(message); ErrorHandler(err) {
+			if err := q.handleGdprMessage(message); ErrorHandler(err) {
 				fmt.Printf("Error with handling message %v\n", err)
 			} else {
-				q.deleteMessage(message)
+				// error handled in subroutine
+				q.deleteQMessage(message, string(q.Config.GdprQueueUrl))
 			}
 		}
 	}()
 }
 
-func (q *Queue) deleteMessage(message *sqs.Message) {
+func (q *Queue) deleteGdprQMessage(message *sqs.Message) {
 	if _, err := q.getSQSSession().DeleteMessage(&sqs.DeleteMessageInput{
 		QueueUrl:      aws.String(string(q.Config.GdprQueueUrl)),
 		ReceiptHandle: message.ReceiptHandle,
@@ -37,7 +37,7 @@ func (q *Queue) deleteMessage(message *sqs.Message) {
 	}
 }
 
-func (q *Queue) pollSqs(chn chan<- *sqs.Message) {
+func (q *Queue) pollGdprSqs(chn chan<- *sqs.Message) {
 	for {
 		output, err := q.getSQSSession().ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(string(q.Config.GdprQueueUrl)),
@@ -57,7 +57,7 @@ func (q *Queue) pollSqs(chn chan<- *sqs.Message) {
 
 }
 
-func (q *Queue) handleMessage(message *sqs.Message) error {
+func (q *Queue) handleGdprMessage(message *sqs.Message) error {
 	var qMessage QMessage
 	// fmt.Printf("Got Message:\n%v\n", message)
 	qMessage.MessageBody.ServiceName = "playhead"
@@ -72,14 +72,14 @@ func (q *Queue) handleMessage(message *sqs.Message) error {
 		return unmerr
 	}
 	if qMessage.Subject == "UserDataDownloadRequest" || qMessage.MessageBody.RequestType == "UserDataDownloadRequest" {
-		downErr := q.handleDownload(qMessage)
+		downErr := q.handleGdprDownload(qMessage)
 		if downErr != nil {
 			// Error is handled and logged
 			ErrorLogger(downErr)
 			return downErr
 		}
 	} else if qMessage.Subject == "UserDataDeleteRequest" || qMessage.MessageBody.RequestType == "UserDataDeleteRequest" {
-		delerr := q.handleDelete(qMessage)
+		delerr := q.handleGdprDeleteReq(qMessage)
 		if delerr != nil {
 			ErrorLogger(delerr)
 		}
@@ -87,7 +87,7 @@ func (q *Queue) handleMessage(message *sqs.Message) error {
 	return nil
 }
 
-func (q *Queue) handleDelete(qMessage QMessage) error {
+func (q *Queue) handleGdprDeleteReq(qMessage QMessage) error {
 	pm := PublishMessage{
 		RequestID:    qMessage.MessageBody.RequestID,
 		RequestType:  qMessage.MessageBody.RequestType,
@@ -101,7 +101,7 @@ func (q *Queue) handleDelete(qMessage QMessage) error {
 	if err := CheckForEmpty(qMessage); err != nil {
 		pm.ErrorMessage = err.Error()
 		pm.Success = false
-		if perr := q.Publish(pm); ErrorHandler(perr) {
+		if perr := q.PublishGdpr(pm); ErrorHandler(perr) {
 			return perr
 		}
 		return err
@@ -117,7 +117,7 @@ func (q *Queue) handleDelete(qMessage QMessage) error {
 			logrus.Error(del.Error)
 			return del.Error
 		}
-		if err := q.Publish(pm); err != nil {
+		if err := q.PublishGdpr(pm); err != nil {
 			logrus.Error(err)
 		}
 		return nil
@@ -125,7 +125,7 @@ func (q *Queue) handleDelete(qMessage QMessage) error {
 	return nil
 }
 
-func (q *Queue) handleDownload(qMessage QMessage) error {
+func (q *Queue) handleGdprDownload(qMessage QMessage) error {
 	pm := PublishMessage{
 		RequestID:    qMessage.MessageBody.RequestID,
 		RequestType:  qMessage.MessageBody.RequestType,
@@ -137,7 +137,7 @@ func (q *Queue) handleDownload(qMessage QMessage) error {
 	if err := CheckForEmpty(qMessage); err != nil {
 		pm.ErrorMessage = err.Error()
 		pm.Success = false
-		if perr := q.Publish(pm); ErrorHandler(perr) {
+		if perr := q.PublishGdpr(pm); ErrorHandler(perr) {
 			return perr
 		}
 		return err
@@ -151,13 +151,13 @@ func (q *Queue) handleDownload(qMessage QMessage) error {
 			if err := q.AddFileToS3(filePath, string(data)); ErrorHandler(err) {
 				pm.Success = false
 				pm.ErrorMessage = err.Error()
-				if perr := q.Publish(pm); ErrorHandler(perr) {
+				if perr := q.PublishGdpr(pm); ErrorHandler(perr) {
 					return perr
 				}
 				return err
 			} else {
 				pm.S3Location = filePath
-				if err := q.Publish(pm); ErrorHandler(err) {
+				if err := q.PublishGdpr(pm); ErrorHandler(err) {
 					return err
 				}
 			}
@@ -168,24 +168,3 @@ func (q *Queue) handleDownload(qMessage QMessage) error {
 }
 
 // Private
-
-func (q *Queue) getSession() *session.Session {
-	// sess = session.Must(session.NewSessionWithOptions(session.Options{
-	// 	AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
-	// 	SharedConfigState:       session.SharedConfigEnable,
-	// 	Config: aws.Config{
-	// 		Region: aws.String(getAwsRegion),
-	// 		CredentialsChainVerboseErrors: aws.Bool(true),
-	// 	},
-	// }))
-	if sess, err := session.NewSession(&aws.Config{Region: aws.String(string(q.Config.AwsRegion))}); !ErrorHandler(err) {
-		return sess
-	} else {
-		return nil
-	}
-}
-
-func (q *Queue) getSQSSession() *sqs.SQS {
-	sqsSession := sqs.New(q.getSession())
-	return sqsSession
-}

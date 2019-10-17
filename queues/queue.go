@@ -1,6 +1,9 @@
 package queues
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sirupsen/logrus"
 	"playhead/db"
 )
@@ -40,4 +43,35 @@ func New() (q *Queue, err error) {
 
 func (q *Queue) Close() error {
 	return q.Database.Close()
+}
+
+func (q *Queue) deleteQMessage(message *sqs.Message, qUrl string) {
+	if _, err := q.getSQSSession().DeleteMessage(&sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(qUrl),
+		ReceiptHandle: message.ReceiptHandle,
+	}); err != nil {
+		ErrorHandler(err)
+		logrus.Errorf("Error removing message from queue: %v\n", err)
+	}
+}
+
+func (q *Queue) getSession() *session.Session {
+	// sess = session.Must(session.NewSessionWithOptions(session.Options{
+	// 	AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	// 	SharedConfigState:       session.SharedConfigEnable,
+	// 	Config: aws.Config{
+	// 		Region: aws.String(getAwsRegion),
+	// 		CredentialsChainVerboseErrors: aws.Bool(true),
+	// 	},
+	// }))
+	if sess, err := session.NewSession(&aws.Config{Region: aws.String(string(q.Config.AwsRegion))}); !ErrorHandler(err) {
+		return sess
+	} else {
+		return nil
+	}
+}
+
+func (q *Queue) getSQSSession() *sqs.SQS {
+	sqsSession := sqs.New(q.getSession())
+	return sqsSession
 }

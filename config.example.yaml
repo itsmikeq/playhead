@@ -5,6 +5,7 @@ aws_key:
 aws_secret:
 aws_region:
 gdpr_queue_url:
+cms_queue_url:
 gdpr_callback_queue_url:
 gdpr_bucket:
 gdpr_base_path:

@@ -10,10 +10,10 @@ import (
 	"sync"
 )
 
-func listenGdprQueues(ctx context.Context, q *queues.Queue) {
+func listenCmsQueue(ctx context.Context, q *queues.Queue) {
 	qctx := q.NewContext()
 	q.Context = qctx
-	q.StartGdprListener(qctx)
+	q.StartCmsListener(qctx)
 	done := make(chan struct{})
 	go func() {
 		<-ctx.Done()
@@ -22,9 +22,11 @@ func listenGdprQueues(ctx context.Context, q *queues.Queue) {
 	<-done
 }
 
-var listenGdprQ = &cobra.Command{
-	Use:   "gdpr_listener",
-	Short: "Start the GDPR queue listener",
+var listenCmsQ = &cobra.Command{
+	Use:   "cms_listener",
+	Short: "Start the CMS queue listener",
+	Long: "Listens for messages from the CMS.  " +
+		"These messages will dictate the relationship between series and episodes",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		q, err := queues.New()
 		if err != nil {
@@ -48,7 +50,7 @@ var listenGdprQ = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			defer cancel()
-			listenGdprQueues(ctx, q)
+			listenCmsQueue(ctx, q)
 		}()
 
 		wg.Wait()
@@ -57,5 +59,5 @@ var listenGdprQ = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(listenGdprQ)
+	rootCmd.AddCommand(listenCmsQ)
 }
