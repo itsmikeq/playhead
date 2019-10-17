@@ -10,7 +10,7 @@ import (
 )
 
 func (q *Queue) StartListener(ctx *Context) {
-	chnMessages := make(chan *sqs.Message, sqsMaxMessages)
+	chnMessages := make(chan *sqs.Message, int64(q.Config.SqsMaxMessages))
 	go q.pollSqs(chnMessages)
 
 	fmt.Printf("Listening on stack queue: %s\n", string(q.Config.GdprQueueUrl))
@@ -41,8 +41,8 @@ func (q *Queue) pollSqs(chn chan<- *sqs.Message) {
 	for {
 		output, err := q.getSQSSession().ReceiveMessage(&sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(string(q.Config.GdprQueueUrl)),
-			MaxNumberOfMessages: aws.Int64(sqsMaxMessages),
-			WaitTimeSeconds:     aws.Int64(timeWaitSeconds),
+			MaxNumberOfMessages: aws.Int64(int64(q.Config.SqsMaxMessages)),
+			WaitTimeSeconds:     aws.Int64(int64(q.Config.TimeWaitSeconds)),
 		})
 
 		if err != nil {

@@ -7,9 +7,6 @@ import (
 	"playhead/model"
 )
 
-var sqsMaxMessages = int64(1)
-var timeWaitSeconds = int64(1)
-
 type QMessageBody struct {
 	UserUUID    string `json:"user_uuid" binding:"required"`
 	RequestID   string `json:"request_id" binding:"required"`
@@ -42,4 +39,3 @@ func CheckForEmpty(qMessage QMessage) error {
 	}
 	return nil
 }
-
