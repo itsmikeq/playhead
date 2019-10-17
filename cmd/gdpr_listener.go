@@ -10,9 +10,10 @@ import (
 	"sync"
 )
 
-func listenQueues(ctx context.Context, q *queues.Queue) {
+func listenGdprQueues(ctx context.Context, q *queues.Queue) {
 	qctx := q.NewContext()
 	q.Context = qctx
+	q.StartListener(qctx)
 	done := make(chan struct{})
 	go func() {
 		<-ctx.Done()
@@ -21,7 +22,7 @@ func listenQueues(ctx context.Context, q *queues.Queue) {
 	<-done
 }
 
-var listenqCmd = &cobra.Command{
+var listenGdprQ = &cobra.Command{
 	Use:   "gdpr_listener",
 	Short: "Start the GDPR queue listener",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -47,7 +48,7 @@ var listenqCmd = &cobra.Command{
 		go func() {
 			defer wg.Done()
 			defer cancel()
-			listenQueues(ctx, q)
+			listenGdprQueues(ctx, q)
 		}()
 
 		wg.Wait()
@@ -56,5 +57,5 @@ var listenqCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(listenqCmd)
+	rootCmd.AddCommand(listenGdprQ)
 }
