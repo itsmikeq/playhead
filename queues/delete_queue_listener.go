@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
@@ -164,4 +165,27 @@ func (q *Queue) handleDownload(qMessage QMessage) error {
 		}
 	}
 	return nil
+}
+
+// Private
+
+func (q *Queue) getSession() *session.Session {
+	// sess = session.Must(session.NewSessionWithOptions(session.Options{
+	// 	AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
+	// 	SharedConfigState:       session.SharedConfigEnable,
+	// 	Config: aws.Config{
+	// 		Region: aws.String(getAwsRegion),
+	// 		CredentialsChainVerboseErrors: aws.Bool(true),
+	// 	},
+	// }))
+	if sess, err := session.NewSession(&aws.Config{Region: aws.String(string(q.Config.AwsRegion))}); !ErrorHandler(err) {
+		return sess
+	} else {
+		return nil
+	}
+}
+
+func (q *Queue) getSQSSession() *sqs.SQS {
+	sqsSession := sqs.New(q.getSession())
+	return sqsSession
 }
