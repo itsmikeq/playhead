@@ -6,28 +6,28 @@ import (
 )
 
 type Config struct {
-	AwsKey               []byte
-	AwsSecret            []byte
-	AwsRegion            []byte
-	GdprQueueUrl         []byte
-	CmsQueueUrl          []byte
-	GdprCallbackQueueUrl []byte
-	GdprBucket           []byte
-	GdprBasePath         []byte
+	AwsKey               string
+	AwsSecret            string
+	AwsRegion            string
+	GdprQueueUrl         string
+	CmsQueueUrl          string
+	GdprCallbackQueueUrl string
+	GdprBucket           string
+	GdprBasePath         string
 	SqsMaxMessages       int
 	TimeWaitSeconds      int
 }
 
 func InitConfig() (*Config, error) {
 	config := &Config{
-		AwsKey:               []byte(viper.GetString("aws_key")),
-		AwsSecret:            []byte(viper.GetString("aws_secret")),
-		AwsRegion:            []byte(viper.GetString("aws_region")),
-		GdprQueueUrl:         []byte(viper.GetString("gdpr_queue_url")),
-		CmsQueueUrl:          []byte(viper.GetString("cms_queue_url")),
-		GdprCallbackQueueUrl: []byte(viper.GetString("gdpr_callback_queue_url")),
-		GdprBucket:           []byte(viper.GetString("gdpr_bucket")),
-		GdprBasePath:         []byte(viper.GetString("gdpr_base_path")),
+		AwsKey:               viper.GetString("aws_key"),
+		AwsSecret:            viper.GetString("aws_secret"),
+		AwsRegion:            viper.GetString("aws_region"),
+		GdprQueueUrl:         viper.GetString("gdpr_queue_url"),
+		CmsQueueUrl:          viper.GetString("cms_queue_url"),
+		GdprCallbackQueueUrl: viper.GetString("gdpr_callback_queue_url"),
+		GdprBucket:           viper.GetString("gdpr_bucket"),
+		GdprBasePath:         viper.GetString("gdpr_base_path"),
 		SqsMaxMessages:       viper.GetInt("sqs_max_messages"),
 		TimeWaitSeconds:      viper.GetInt("sqs_max_messages"),
 	}

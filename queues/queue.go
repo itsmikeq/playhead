@@ -64,7 +64,7 @@ func (q *Queue) getSession() *session.Session {
 	// 		CredentialsChainVerboseErrors: aws.Bool(true),
 	// 	},
 	// }))
-	if sess, err := session.NewSession(&aws.Config{Region: aws.String(string(q.Config.AwsRegion))}); !ErrorHandler(err) {
+	if sess, err := session.NewSession(&aws.Config{Region: aws.String(q.Config.AwsRegion)}); !ErrorHandler(err) {
 		return sess
 	} else {
 		return nil

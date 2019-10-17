@@ -11,12 +11,12 @@ func (q *Queue) StartCmsListener(ctx *Context) {
 	chnMessages := make(chan *sqs.Message, int64(q.Config.SqsMaxMessages))
 	go q.pollCmsSqs(chnMessages)
 
-	fmt.Printf("Listening on stack queue: %s\n", string(q.Config.CmsQueueUrl))
+	fmt.Printf("Listening on stack queue: %s\n", q.Config.CmsQueueUrl)
 
 	go func() {
 		for message := range chnMessages {
 			if err := q.handleCMSMessage(message); !ErrorHandler(err) {
-				q.deleteQMessage(message, string(q.Config.CmsQueueUrl))
+				q.deleteQMessage(message, q.Config.CmsQueueUrl)
 			}
 		}
 	}()
@@ -25,7 +25,7 @@ func (q *Queue) StartCmsListener(ctx *Context) {
 func (q *Queue) pollCmsSqs(chn chan<- *sqs.Message) {
 	for {
 		output, err := q.getSQSSession().ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(string(q.Config.CmsQueueUrl)),
+			QueueUrl:            aws.String(q.Config.CmsQueueUrl),
 			MaxNumberOfMessages: aws.Int64(int64(q.Config.SqsMaxMessages)),
 			WaitTimeSeconds:     aws.Int64(int64(q.Config.TimeWaitSeconds)),
 		})

@@ -13,7 +13,7 @@ func (q *Queue) StartGdprListener(ctx *Context) {
 	chnMessages := make(chan *sqs.Message, int64(q.Config.SqsMaxMessages))
 	go q.pollGdprSqs(chnMessages)
 
-	fmt.Printf("Listening on stack queue: %s\n", string(q.Config.GdprQueueUrl))
+	fmt.Printf("Listening on stack queue: %s\n", q.Config.GdprQueueUrl)
 
 	go func() {
 		for message := range chnMessages {
@@ -21,7 +21,7 @@ func (q *Queue) StartGdprListener(ctx *Context) {
 				fmt.Printf("Error with handling message %v\n", err)
 			} else {
 				// error handled in subroutine
-				q.deleteQMessage(message, string(q.Config.GdprQueueUrl))
+				q.deleteQMessage(message, q.Config.GdprQueueUrl)
 			}
 		}
 	}()
@@ -29,7 +29,7 @@ func (q *Queue) StartGdprListener(ctx *Context) {
 
 func (q *Queue) deleteGdprQMessage(message *sqs.Message) {
 	if _, err := q.getSQSSession().DeleteMessage(&sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(string(q.Config.GdprQueueUrl)),
+		QueueUrl:      aws.String(q.Config.GdprQueueUrl),
 		ReceiptHandle: message.ReceiptHandle,
 	}); err != nil {
 		ErrorHandler(err)
@@ -40,7 +40,7 @@ func (q *Queue) deleteGdprQMessage(message *sqs.Message) {
 func (q *Queue) pollGdprSqs(chn chan<- *sqs.Message) {
 	for {
 		output, err := q.getSQSSession().ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(string(q.Config.GdprQueueUrl)),
+			QueueUrl:            aws.String(q.Config.GdprQueueUrl),
 			MaxNumberOfMessages: aws.Int64(int64(q.Config.SqsMaxMessages)),
 			WaitTimeSeconds:     aws.Int64(int64(q.Config.TimeWaitSeconds)),
 		})
@@ -146,7 +146,7 @@ func (q *Queue) handleGdprDownload(qMessage QMessage) error {
 	if playheads, err := q.Database.GetUserPlayheads(pm.UserUUID); err != nil {
 		return err
 	} else {
-		filePath := filepath.Join(string(q.Config.GdprBasePath), qMessage.MessageBody.RequestID, "playheads.json")
+		filePath := filepath.Join(q.Config.GdprBasePath, qMessage.MessageBody.RequestID, "playheads.json")
 		if data, err := json.Marshal(&playheads); err == nil {
 			if err := q.AddFileToS3(filePath, string(data)); ErrorHandler(err) {
 				pm.Success = false

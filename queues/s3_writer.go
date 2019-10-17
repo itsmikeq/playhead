@@ -30,7 +30,7 @@ func (q *Queue) AddFileToS3(fileName string, content string) error {
 	// Config settings: this is where you choose the bucket, filename, content-type etc.
 	// of the file you're uploading.
 	if _, err := s3.New(q.getSession()).PutObject(&s3.PutObjectInput{
-		Bucket:             aws.String(string(q.Config.GdprBucket)),
+		Bucket:             aws.String(q.Config.GdprBucket),
 		Key:                aws.String(fileName),
 		ACL:                aws.String("private"),
 		Body:               bytes.NewReader(b.Bytes()),
