@@ -19,8 +19,6 @@ type PublishMessage struct {
 	Success      bool   `json:"success" binding:"required"` // "true" || "false"
 }
 
-
-
 func (q *Queue) Publish(message PublishMessage) error {
 	if messageJSON, err := json.Marshal(message); ErrorHandler(err) {
 		log.Printf("Error marshaling message: %v\n", err)

@@ -1,7 +1,7 @@
 package model
 
 type User struct {
-	ID uint // the request ID
+	ID       uint   // the request ID
 	UserID   string `json:"user_uuid"`
 	Username string
 	Exp      int

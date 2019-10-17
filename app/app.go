@@ -60,6 +60,6 @@ func (e *UserPlayheadError) Error() string {
 	return e.Message
 }
 
-func (a *App) ValidateBearerToken(token string) (user *model.User, failureReason string, err error){
+func (a *App) ValidateBearerToken(token string) (user *model.User, failureReason string, err error) {
 	return user, failureReason, err
 }

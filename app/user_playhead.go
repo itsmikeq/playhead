@@ -95,10 +95,10 @@ func (ctx *Context) DeletePlayheadsForUser(userUUID string) error {
 
 func (ctx *Context) validatePlayhead(user *model.UserPlayhead) *ValidationError {
 	// naive email validation
-	if (len(user.EpisodeUUID) < 1) {
+	if len(user.EpisodeUUID) < 1 {
 		return &ValidationError{"Missing episode UUID"}
 	}
-	if (len(user.SeriesUUID) < 1) {
+	if len(user.SeriesUUID) < 1 {
 		return &ValidationError{"Missing series UUID"}
 	}
 	return nil

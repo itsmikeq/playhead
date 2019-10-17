@@ -26,7 +26,6 @@ func (q *Queue) StartListener(ctx *Context) {
 	}()
 }
 
-
 func (q *Queue) deleteMessage(message *sqs.Message) {
 	if _, err := q.getSQSSession().DeleteMessage(&sqs.DeleteMessageInput{
 		QueueUrl:      aws.String(string(q.Config.GdprQueueUrl)),
