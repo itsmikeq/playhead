@@ -46,7 +46,7 @@ func (q *Queue) pollSqs(chn chan<- *sqs.Message) {
 		})
 
 		if err != nil {
-			exitErrorf("failed to fetch sqs message %v", err)
+			logrus.Errorf("failed to fetch sqs message %v", err)
 		}
 
 		for _, message := range output.Messages {
