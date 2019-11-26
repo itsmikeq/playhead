@@ -1,6 +1,6 @@
 secret_key: 123
 database_uri: host=localhost port=5432 user=playheads_user_dev dbname=user_playheads_dev password=password sslmode=disable
-jwt_key: f9d3d439f0bf1ecd98ae0146713d0cb1284b1c0feb328b1982911f2582251d02
+jwt_key: "a secret key"
 aws_key:
 aws_secret:
 aws_region:

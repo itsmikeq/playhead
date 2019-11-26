@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
@@ -29,16 +30,21 @@ func (q *Queue) AddFileToS3(fileName string, content string) error {
 
 	// Config settings: this is where you choose the bucket, filename, content-type etc.
 	// of the file you're uploading.
-	if _, err := s3.New(q.getSession()).PutObject(&s3.PutObjectInput{
-		Bucket:             aws.String(q.Config.GdprBucket),
-		Key:                aws.String(fileName),
-		ACL:                aws.String("private"),
-		Body:               bytes.NewReader(b.Bytes()),
-		ContentLength:      aws.Int64(int64(size)),
-		ContentType:        aws.String(http.DetectContentType(b.Bytes())),
-		ContentDisposition: aws.String("application/octet-stream"),
-	}); ErrorHandler(err) {
-		return err
+	if sess, err := q.getSession(); err != nil {
+		logrus.Error("Unable to get session ", err)
+		panic(err)
+	} else {
+		if _, err := s3.New(sess).PutObject(&s3.PutObjectInput{
+			Bucket:             aws.String(q.Config.GdprBucket),
+			Key:                aws.String(fileName),
+			ACL:                aws.String("private"),
+			Body:               bytes.NewReader(b.Bytes()),
+			ContentLength:      aws.Int64(int64(size)),
+			ContentType:        aws.String(http.DetectContentType(b.Bytes())),
+			ContentDisposition: aws.String("application/octet-stream"),
+		}); ErrorHandler(err) {
+			return err
+		}
+		return nil
 	}
-	return nil
 }

@@ -15,8 +15,10 @@ func (q *Queue) StartCmsListener(ctx *Context) {
 
 	go func() {
 		for message := range chnMessages {
-			if err := q.handleCMSMessage(message); !ErrorHandler(err) {
+			if err := q.handleCMSMessage(message); err == nil {
 				q.deleteQMessage(message, q.Config.CmsQueueUrl)
+			} else {
+				ErrorLogger(err)
 			}
 		}
 	}()
@@ -31,7 +33,8 @@ func (q *Queue) pollCmsSqs(chn chan<- *sqs.Message) {
 		})
 
 		if err != nil {
-			logrus.Errorf("failed to fetch sqs message %v", err)
+			logrus.Error("failed to fetch sqs message: ", err)
+			panic(err)
 		}
 
 		for _, message := range output.Messages {
@@ -44,5 +47,6 @@ func (q *Queue) pollCmsSqs(chn chan<- *sqs.Message) {
 
 func (q *Queue) handleCMSMessage(message *sqs.Message) error {
 	// TODO: handle the messages/update the series and episode info
+	fmt.Printf("Message: %+v\n", message)
 	return nil
 }

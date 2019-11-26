@@ -28,7 +28,7 @@ func ErrorLogger(err error) {
 		// the error happened, 0 = this function, we don't want that.
 		pc, fn, line, _ := runtime.Caller(1)
 
-		logrus.Error(fmt.Sprintf("[error] in %s[%s:%d] %v\n", runtime.FuncForPC(pc).Name(), fn, line, err))
+		fmt.Printf(fmt.Sprintf("[error] in %s[%s:%d] %v\n", runtime.FuncForPC(pc).Name(), fn, line, err))
 		logrus.Error(fmt.Sprintf("[error] in %s[%s:%d] %v\n", runtime.FuncForPC(pc).Name(), fn, line, err))
 	}
 }

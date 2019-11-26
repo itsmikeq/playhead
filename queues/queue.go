@@ -1,6 +1,7 @@
 package queues
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
@@ -52,10 +53,12 @@ func (q *Queue) deleteQMessage(message *sqs.Message, qUrl string) {
 	}); err != nil {
 		ErrorHandler(err)
 		logrus.Errorf("Error removing message from queue: %v\n", err)
+	} else {
+		logrus.Debug(fmt.Sprintf("Deleted +%v\n", message))
 	}
 }
 
-func (q *Queue) getSession() *session.Session {
+func (q *Queue) getSession() (*session.Session, error) {
 	// sess = session.Must(session.NewSessionWithOptions(session.Options{
 	// 	AssumeRoleTokenProvider: stscreds.StdinTokenProvider,
 	// 	SharedConfigState:       session.SharedConfigEnable,
@@ -64,14 +67,27 @@ func (q *Queue) getSession() *session.Session {
 	// 		CredentialsChainVerboseErrors: aws.Bool(true),
 	// 	},
 	// }))
-	if sess, err := session.NewSession(&aws.Config{Region: aws.String(q.Config.AwsRegion)}); !ErrorHandler(err) {
-		return sess
+	if len(q.Config.CmsQueueUrl) > 0 {
+		fmt.Println("Using cms q ", q.Config.CmsQueueUrl)
+		if sess, err := session.NewSession(&aws.Config{LogLevel: aws.LogLevel(3), DisableSSL: aws.Bool(true), Region: aws.String(q.Config.AwsRegion)}); err == nil {
+			return sess, nil
+		} else {
+			logrus.Errorf(fmt.Sprintf("Error +%v\n", err))
+			return nil, err
+		}
 	} else {
-		return nil
+		if sess, err := session.NewSession(&aws.Config{Region: aws.String(q.Config.AwsRegion)}); !ErrorHandler(err) {
+			return sess, nil
+		} else {
+			return nil, err
+		}
 	}
 }
 
 func (q *Queue) getSQSSession() *sqs.SQS {
-	sqsSession := sqs.New(q.getSession())
-	return sqsSession
+	if sess, err := q.getSession(); err != nil {
+		panic(err)
+	} else {
+		return sqs.New(sess)
+	}
 }
